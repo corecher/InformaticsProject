@@ -57,9 +57,23 @@ while running:
         pygame.draw.rect(screen, RED, quit_game_button, border_radius=5)
         screen.blit(font.render("중도 포기", True, WHITE), (120, 430))
 
-        pygame.draw.rect(screen, BLUE, draw_pile_rect, border_radius=5)
-        screen.blit(font.render("뽑기 더미", True, WHITE), (395, 160))
-        screen.blit(font.render(f"({len(manager.card_dummy.cardList)})", True, WHITE), (425, 200))
+        # 더미에 카드가 남아있는 경우 다음에 나올 카드 렌더링
+        if not manager.card_dummy.isEmpty():
+            next_c = manager.card_dummy.peek()
+            
+            # 카드의 고유 색상으로 배경 그리기
+            pygame.draw.rect(screen, next_c.color, draw_pile_rect, border_radius=5)
+            
+            # 카드 이름 표시 (이름이 길 수 있으므로 기존 미리보기와 동일하게 log_font 사용)
+            screen.blit(log_font.render(next_c.name, True, DARK), (385, 160))
+            
+            # 남은 카드 장수 표시
+            screen.blit(font.render(f"({len(manager.card_dummy.cardList)})", True, DARK), (425, 200))
+        else:
+            # 더미가 비었을 경우의 기본 화면
+            pygame.draw.rect(screen, GRAY, draw_pile_rect, border_radius=5)
+            screen.blit(font.render("더미 없음", True, DARK), (395, 160))
+            screen.blit(font.render("(0)", True, DARK), (425, 200))
 
         pygame.draw.rect(screen, DARK, preview_button_rect, border_radius=5)
         screen.blit(font.render("다음 카드 보기", True, WHITE), (385, 307))
