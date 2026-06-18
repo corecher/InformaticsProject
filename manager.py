@@ -235,7 +235,6 @@ class GameManager:
             if traps: 
                 self.card_on_hand.cardList.remove(traps[0])
                 self.trash_card.cardList.append(traps[0])
-        elif card.name == "아기상어": self.draw_card_from_dummy(35)
         elif card.name == "종이접기":
             for _ in range(len(self.card_on_hand.cardList) // 2):
                 if self.card_on_hand.cardList: self.trash_card.cardList.append(self.card_on_hand.cardList.pop(random.randrange(len(self.card_on_hand.cardList))))
