@@ -18,7 +18,7 @@ from .utils import clamp, ease_out_cubic, ease_in_out, lerp, lerp_pos, format_ti
 pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("준민이의 디스크 - 연출 개선 버전")
+pygame.display.set_caption("그리다 만 게임")
 
 font = pygame.font.SysFont("malgungothic", 25)
 big_font = pygame.font.SysFont("malgungothic", 60)
@@ -589,7 +589,7 @@ def check_clear_condition(current_time_sec):
 
 
 def draw_menu():
-    title = big_font.render("JUNMIN'S DISK", True, DARK)
+    title = big_font.render("그리다 만 게임", True, DARK)
     screen.blit(title, (410, 160))
     pygame.draw.rect(screen, (120, 220, 120), start_button, border_radius=5)
     screen.blit(font.render("게임 시작", True, DARK), (540, 325))
