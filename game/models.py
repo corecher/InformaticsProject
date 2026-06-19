@@ -7,6 +7,7 @@ CardDummy/CardOnHand/TrashCard는 카드 묶음을 관리하는 아주 단순한
 import os
 import pygame
 from .config import DARK
+import random
 
 DEFAULT_CARD_W = 150
 DEFAULT_CARD_H = 240
@@ -77,7 +78,29 @@ def _wrap_text_to_width(font, text, max_width, max_lines, ellipsis=True):
 
     return lines
 
+def draw_sketch_rect(screen, rect, color, thickness=2, offset_range=2, loops=2):
+    """흔들림을 줄여서 정돈된 스케치 효과를 내는 함수"""
+    x, y, w, h = rect.x, rect.y, rect.width, rect.height
+    
+    # 💡 핵심 수정: app.py에서 아무리 큰 offset_range가 들어와도 무시하고 
+    # 최대 1픽셀(또는 0픽셀)까지만 미세하게 흔들리도록 강제 고정합니다.
+    safe_offset = 2  
+    
+    # 두꺼운 선이 여러 번 겹치면 너무 투박하므로 두께도 살짝 줄여줍니다.
+    safe_thickness = max(2, thickness - 2) 
 
+    for _ in range(loops):
+        # 각 꼭짓점에 아주 미세한 오차만 부여 (너무 튀지 않음)
+        dx1, dy1 = random.randint(-safe_offset, safe_offset), random.randint(-safe_offset, safe_offset)
+        dx2, dy2 = random.randint(-safe_offset, safe_offset), random.randint(-safe_offset, safe_offset)
+        dx3, dy3 = random.randint(-safe_offset, safe_offset), random.randint(-safe_offset, safe_offset)
+        dx4, dy4 = random.randint(-safe_offset, safe_offset), random.randint(-safe_offset, safe_offset)
+        
+        # 4개의 외곽선을 따로 떼어 그리기
+        pygame.draw.line(screen, color, (x + dx1, y + dy1), (x + w + dx2, y + dy2), safe_thickness)
+        pygame.draw.line(screen, color, (x + w + dx2, y + dy2), (x + w + dx3, y + h + dy3), safe_thickness)
+        pygame.draw.line(screen, color, (x + w + dx3, y + h + dy3), (x + dx4, y + h + dy4), safe_thickness)
+        pygame.draw.line(screen, color, (x + dx4, y + h + dy4), (x + dx1, y + dy1), safe_thickness)
 class Card:
     def __init__(self, data):
         self.name = data["name"]
@@ -104,7 +127,6 @@ class Card:
         # 단, 일부 카드 이미지는 실제 파일명이 카드 표시 이름과 달라서
         # IMAGE_FILE_ALIASES에 등록된 이미지 이름도 후보에 넣습니다.
         image_names = []
-
         # 1순위: 카드 표시 이름과 같은 파일명
         image_names.append(self.name)
 
@@ -139,7 +161,7 @@ class Card:
 
     def draw(self, screen, x, y):
         self.draw_at(screen, x, y, DEFAULT_CARD_W, DEFAULT_CARD_H, update_rect=True)
-
+    
     def draw_image_only(self, screen, x, y, width=DEFAULT_CARD_W, height=DEFAULT_CARD_H, update_rect=True):
         self.draw_at(screen, x, y, width, height, update_rect=update_rect, image_only=True)
 
@@ -169,8 +191,8 @@ class Card:
         border = max(1, width // 45)
 
         pygame.draw.rect(screen, self.color, rect, border_radius=radius)
-        pygame.draw.rect(screen, DARK, rect, border, border_radius=radius)
-
+        #pygame.draw.rect(screen, DARK, rect, border, border_radius=radius)
+        draw_sketch_rect(screen, rect, DARK, thickness=border, offset_range=1, loops=1)
         if image_only:
             pad = max(4, int(min(width, height) * 0.07))
             img_rect = pygame.Rect(draw_x + pad, draw_y + pad, width - pad * 2, height - pad * 2)

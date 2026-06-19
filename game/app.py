@@ -9,11 +9,13 @@ GameManager는 실제 카드 효과와 게임 상태를 처리하고,
 import os
 import pygame
 import sys
+import random
 
 from .audio import SoundManager
 from .config import WIDTH, HEIGHT, WHITE, GRAY, DARK, RED, GREEN, FPS, CLEAR_HAND_SIZE, MAX_HAND_CARDS
 from .manager import GameManager
 from .utils import clamp, ease_out_cubic, ease_in_out, lerp, lerp_pos, format_time
+from .models import draw_sketch_rect
 
 pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
@@ -25,7 +27,27 @@ big_font = pygame.font.SysFont("malgungothic", 60)
 mid_font = pygame.font.SysFont("malgungothic", 34)
 log_font = pygame.font.SysFont("malgungothic", 13)
 small_font = pygame.font.SysFont("malgungothic", 16)
+PAPER_YELLOW = (255, 250, 210)  # 밝고 따뜻한 연노랑 (모눈종이 배경색)
+GRID_COLOR = (230, 220, 180)    # 격자 선 색상 (너무 튀지 않는 색)
 
+def create_grid_surface(w, h):
+    surf = pygame.Surface((w, h))
+    surf.fill(PAPER_YELLOW)
+    
+    grid_size = 40  # 격자 한 칸의 크기
+    
+    # 세로선 그리기
+    for x in range(0, w, grid_size):
+        pygame.draw.line(surf, GRID_COLOR, (x, 0), (x, h), 1)
+        
+    # 가로선 그리기
+    for y in range(0, h, grid_size):
+        pygame.draw.line(surf, GRID_COLOR, (0, y), (w, y), 1)
+        
+    return surf
+
+# 전역 배경 서피스 생성
+BG_SURFACE = create_grid_surface(WIDTH, HEIGHT)
 start_button = pygame.Rect(450, 300, 300, 80)
 exit_button = pygame.Rect(450, 410, 300, 80)
 restart_button = pygame.Rect(450, 500, 300, 70)
@@ -590,16 +612,22 @@ def check_clear_condition(current_time_sec):
 
 def draw_menu():
     title = big_font.render("그리다 만 게임", True, DARK)
-    screen.blit(title, (410, 160))
-    pygame.draw.rect(screen, (120, 220, 120), start_button, border_radius=5)
-    screen.blit(font.render("게임 시작", True, DARK), (540, 325))
-    pygame.draw.rect(screen, (240, 128, 128), exit_button, border_radius=5)
-    screen.blit(font.render("게임 종료", True, DARK), (540, 435))
+    title_rect = title.get_rect(center=(WIDTH//2, 190)).inflate(60, 40)
+    draw_sketch_rect(screen, title_rect, DARK, thickness=3, offset_range=5, loops=4)
+    screen.blit(title, title.get_rect(center=(WIDTH//2, 190)))
+
+    pygame.draw.rect(screen, (220, 235, 220), start_button)
+    draw_sketch_rect(screen, start_button, (50, 150, 50), thickness=2, offset_range=4, loops=3)
+    screen.blit(font.render("대충 시작하기", True, DARK), (start_button.x + 70, start_button.y + 25))
+
+    pygame.draw.rect(screen, (235, 220, 220), exit_button)
+    draw_sketch_rect(screen, exit_button, RED, thickness=2, offset_range=4, loops=3)
+    screen.blit(font.render("안 하고 끄기", True, DARK), (exit_button.x + 80, exit_button.y + 25))
 
 
 def draw_status_bar(current_time_sec):
-    pygame.draw.rect(screen, (238, 238, 238), status_bar_rect, border_radius=8)
-    pygame.draw.rect(screen, (190, 190, 190), status_bar_rect, 1, border_radius=8)
+    pygame.draw.rect(screen, (245, 245, 240), status_bar_rect)
+    draw_sketch_rect(screen, status_bar_rect, DARK, thickness=2, offset_range=2, loops=2)
 
     hand_count = len(get_render_hand_cards())
     goal_color = GREEN if hand_count == CLEAR_HAND_SIZE else DARK
@@ -677,8 +705,9 @@ def get_hovered_draw_card(mouse_pos):
 
 
 def draw_log_panel():
-    pygame.draw.rect(screen, (245, 245, 245), log_rect, border_radius=5)
-    screen.blit(font.render("실시간 로그", True, DARK), (850, 110))
+    pygame.draw.rect(screen, (245, 245, 240), log_rect)
+    draw_sketch_rect(screen, log_rect, DARK, thickness=2, offset_range=3, loops=2)
+    screen.blit(font.render("실시간 로그 (작성중)", True, DARK), (log_rect.x + 10, log_rect.y + 5))
 
     old_clip = screen.get_clip()
     screen.set_clip(log_rect.inflate(-10, -10))
@@ -711,8 +740,9 @@ def draw_game(current_time_sec):
     selected_card = manager.drag_card if manager.drag_card else (hovered_card or hovered_draw_card)
 
     draw_selected_card_panel(selected_card)
-    pygame.draw.rect(screen, RED, quit_game_button, border_radius=5)
-    screen.blit(font.render("중도 포기", True, WHITE), (quit_game_button.x + 55, quit_game_button.y + 8))
+    pygame.draw.rect(screen, (255, 200, 200), quit_game_button)
+    draw_sketch_rect(screen, quit_game_button, RED, thickness=2, offset_range=3, loops=2)
+    screen.blit(font.render("때려치우기", True, DARK), (quit_game_button.x + 55, quit_game_button.y + 8))
 
     # 연출 중일 때만 왼쪽 아래에 스킵 버튼을 보여준다.
     if has_pending_effects() and not waiting_for_clear:
@@ -725,12 +755,17 @@ def draw_game(current_time_sec):
     if visual_top_card:
         visual_top_card.draw_at(screen, draw_pile_rect.x, draw_pile_rect.y, draw_pile_rect.width, draw_pile_rect.height, update_rect=False)
     else:
-        pygame.draw.rect(screen, GRAY, draw_pile_rect, border_radius=8)
-        pygame.draw.rect(screen, DARK, draw_pile_rect, 2, border_radius=8)
-        screen.blit(font.render("더미 없음", True, DARK), (382, 180))
+        pygame.draw.rect(screen, (230, 230, 230), draw_pile_rect)
+        draw_sketch_rect(screen, draw_pile_rect, GRAY, thickness=3, offset_range=4, loops=3)
+        screen.blit(font.render("카드 없음", True, DARK), (draw_pile_rect.x + 20, draw_pile_rect.y + 100))
 
-    pygame.draw.rect(screen, (230, 230, 230), play_zone_rect, border_radius=5)
-    screen.blit(font.render("카드 내기", True, DARK), (680, 197))
+    pygame.draw.rect(screen, (240, 245, 250), play_zone_rect)
+    draw_sketch_rect(screen, play_zone_rect, (100, 150, 200), thickness=2, offset_range=3, loops=3)
+    screen.blit(font.render("대충 내는 곳", True, DARK), (play_zone_rect.x + 15, play_zone_rect.y + 85))
+
+    draw_log_panel()
+
+    draw_sketch_rect(screen, hand_area_rect, GRAY, thickness=1, offset_range=5, loops=2)
 
     draw_log_panel()
 
@@ -798,7 +833,7 @@ def run_game():
     global waiting_for_clear
     running = True
     while running:
-        screen.fill(WHITE)
+        screen.blit(BG_SURFACE, (0, 0))
         current_time_sec = 0
 
         if manager.game_state == "game":
